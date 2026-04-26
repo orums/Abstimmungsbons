@@ -1,2 +1,2 @@
 # Abstimmungsbons
-Erstellt Abstimmungsbons und eine Smartphne Scanner für die Auswertung
+Erstellt Abstimmungsbons und eine Smartphone Scanner für die Auswertung
