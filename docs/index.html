@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Abstimmung Scanner</title>
-  <!-- version: 1.0.0 -->
+  <!-- version: 1.0.1 -->
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -469,7 +469,8 @@ async function initCamera() {
     // Must request permission first — only then does listVideoInputDevices return labels
     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
     stream.getTracks().forEach(t => t.stop()); // stop preview stream, ZXing will open its own
-    deviceList = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
+    const tempReader = new ZXing.BrowserMultiFormatReader();
+    deviceList = await tempReader.listVideoInputDevices();
     const rear = deviceList.find(d => /back|rear|environment/i.test(d.label));
     deviceIndex = rear ? deviceList.indexOf(rear) : 0;
     await startScanner(deviceList[deviceIndex]?.deviceId);
