@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project-specific: generated output files
+data/*.xlsx
+data/*.pdf
+
+# Claude Code local settings
+.claude/
