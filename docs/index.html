@@ -4,19 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Abstimmung Scanner</title>
-  <!-- version: 1.1.0 -->
+  <!-- version: 2.0.0 -->
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --ja:   #22c55e;
-      --nein: #ef4444;
-      --enth: #f59e0b;
-      --bg:   #0f172a;
-      --card: #1e293b;
+      --ja:     #22c55e;
+      --nein:   #ef4444;
+      --enth:   #f59e0b;
+      --bg:     #0f172a;
+      --card:   #1e293b;
       --border: #334155;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
+      --text:   #f1f5f9;
+      --muted:  #94a3b8;
     }
 
     body {
@@ -27,11 +27,11 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 1rem;
-      gap: 1rem;
+      padding: .75rem;
+      gap: .75rem;
     }
 
-    h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: .03em; }
+    h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: .03em; }
 
     /* ── Camera ── */
     #scanner-wrap {
@@ -45,7 +45,6 @@
     }
     #scanner-wrap video { width: 100%; display: block; }
 
-    /* Aim overlay changes shape depending on mode */
     #aim {
       position: absolute;
       inset: 50% auto auto 50%;
@@ -79,7 +78,6 @@
       text-align: center;
     }
     #status.ok    { color: var(--ja);   border-color: var(--ja); }
-    #status.dup   { color: var(--enth); border-color: var(--enth); }
     #status.error { color: var(--nein); border-color: var(--nein); }
 
     /* ── Format toggle ── */
@@ -93,7 +91,7 @@
     }
     #format-toggle button {
       flex: 1;
-      padding: .45rem 1.1rem;
+      padding: .4rem 1rem;
       border-radius: 7px;
       border: none;
       font-size: .9rem;
@@ -103,24 +101,21 @@
       cursor: pointer;
       transition: background .15s, color .15s;
     }
-    #format-toggle button.active {
-      background: #3b82f6;
-      color: #fff;
-    }
+    #format-toggle button.active { background: #3b82f6; color: #fff; }
 
     /* ── Action buttons ── */
     .btn-row {
       display: flex;
-      gap: .6rem;
+      gap: .5rem;
       flex-wrap: wrap;
       justify-content: center;
     }
     button {
       cursor: pointer;
-      padding: .55rem 1.3rem;
+      padding: .5rem 1.2rem;
       border-radius: 8px;
       border: none;
-      font-size: .95rem;
+      font-size: .9rem;
       font-weight: 600;
     }
     #btn-report { background: #3b82f6; color: #fff; }
@@ -128,26 +123,30 @@
     button:active { opacity: .8; }
 
     /* ── Live tally ── */
-    #tally-wrap { width: 100%; max-width: 600px; }
-    #tally-wrap h2 { font-size: 1rem; color: var(--muted); margin-bottom: .5rem; }
+    #tally-wrap { width: 100%; max-width: 560px; }
+    #tally-wrap h2 { font-size: .9rem; color: var(--muted); margin-bottom: .4rem; }
     #tally-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: .85rem;
+      font-size: .88rem;
+      table-layout: fixed;
     }
     #tally-table th, #tally-table td {
-      padding: .45rem .6rem;
-      text-align: right;
+      padding: .4rem .3rem;
+      text-align: center;
       border-bottom: 1px solid var(--border);
     }
     #tally-table th:first-child,
-    #tally-table td:first-child { text-align: left; }
-    #tally-table thead th { color: var(--muted); font-weight: 600; font-size: .8rem; }
+    #tally-table td:first-child { text-align: left; width: 2.2rem; }
+    #tally-table thead th { color: var(--muted); font-weight: 600; font-size: .78rem; }
+    #tally-table thead small { display: block; font-weight: 400; font-size: .68rem; opacity: .7; }
     #tally-table .col-ja   { color: var(--ja); }
     #tally-table .col-nein { color: var(--nein); }
     #tally-table .col-enth { color: var(--enth); }
-    #tally-table tfoot td  { font-weight: 700; border-top: 2px solid var(--border); }
     #tally-table .zero     { color: var(--border); }
+    .result-ok { color: var(--ja);   font-size: .78rem; font-weight: 700; }
+    .result-no { color: var(--nein); font-size: .78rem; font-weight: 700; }
+    .result-nil { color: var(--muted); font-size: .78rem; }
 
     /* ── Report modal ── */
     #report-overlay {
@@ -166,67 +165,77 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 14px;
-      padding: 1.5rem;
+      padding: 1.4rem;
       width: 100%;
       max-width: 640px;
       margin: auto;
     }
-    #report-box h2 { margin-bottom: 1rem; }
+    #report-box h2 { margin-bottom: .8rem; font-size: 1.1rem; }
+    #report-box h3 { font-size: .9rem; color: var(--muted); margin: 1rem 0 .4rem; }
     #report-box table {
       width: 100%;
       border-collapse: collapse;
       font-size: .85rem;
-      margin-bottom: 1.2rem;
+      margin-bottom: .6rem;
+      table-layout: fixed;
     }
     #report-box th, #report-box td {
-      padding: .5rem .6rem;
-      text-align: right;
+      padding: .45rem .3rem;
+      text-align: center;
       border-bottom: 1px solid var(--border);
     }
     #report-box th:first-child,
     #report-box td:first-child { text-align: left; }
-    #report-box thead th { color: var(--muted); font-size: .8rem; }
-    #report-box tfoot td { font-weight: 700; border-top: 2px solid var(--border); }
+    #report-box thead th { color: var(--muted); font-size: .78rem; }
+    #report-box thead small { display: block; font-weight: 400; font-size: .68rem; opacity: .7; }
     #report-box .col-ja   { color: var(--ja); }
     #report-box .col-nein { color: var(--nein); }
     #report-box .col-enth { color: var(--enth); }
     .report-btn-row {
       display: flex;
-      gap: .6rem;
+      gap: .5rem;
       flex-wrap: wrap;
       justify-content: flex-end;
+      margin-top: 1rem;
     }
-    #btn-print { background: #3b82f6; color: #fff; padding: .5rem 1.2rem; border-radius: 8px; font-weight: 600; }
-    #btn-close { background: var(--card); color: var(--muted); border: 1px solid var(--border); padding: .5rem 1.2rem; border-radius: 8px; font-weight: 600; }
+    #btn-email { background: #3b82f6; color: #fff; padding: .45rem 1.1rem; border-radius: 8px; font-weight: 600; font-size: .9rem; }
+    #btn-pdf   { background: #475569; color: #fff; padding: .45rem 1.1rem; border-radius: 8px; font-weight: 600; font-size: .9rem; }
+    #btn-close { background: var(--card); color: var(--muted); border: 1px solid var(--border); padding: .45rem 1.1rem; border-radius: 8px; font-weight: 600; font-size: .9rem; }
 
-    /* ── Scan log ── */
-    #log-wrap { width: 100%; max-width: 600px; }
-    #log-wrap h2 { font-size: 1rem; color: var(--muted); margin-bottom: .5rem; }
-    #log { list-style: none; font-size: .8rem; max-height: 160px; overflow-y: auto; }
+    /* ── Scan log (compact) ── */
+    #log-wrap { width: 100%; max-width: 560px; }
+    #log-wrap h2 { font-size: .9rem; color: var(--muted); margin-bottom: .4rem; }
+    #log { list-style: none; font-size: .78rem; max-height: 140px; overflow-y: auto; }
     #log li {
       display: flex;
       justify-content: space-between;
-      padding: .25rem .4rem;
+      padding: .22rem .4rem;
       border-bottom: 1px solid var(--border);
       gap: .5rem;
     }
     #log li span.code { font-family: monospace; }
     #log li span.badge {
-      padding: .1rem .5rem;
+      padding: .1rem .45rem;
       border-radius: 99px;
-      font-size: .75rem;
+      font-size: .72rem;
       font-weight: 700;
+      white-space: nowrap;
     }
-    .badge-J   { background: #14532d; color: var(--ja); }
-    .badge-N   { background: #450a0a; color: var(--nein); }
-    .badge-E   { background: #451a03; color: var(--enth); }
-    .badge-DUP { background: #1e293b; color: var(--muted); }
+    .badge-J { background: #14532d; color: var(--ja); }
+    .badge-N { background: #450a0a; color: var(--nein); }
+    .badge-E { background: #451a03; color: var(--enth); }
+
+    /* ── Report scan log table ── */
+    #report-log-table { font-size: .78rem; }
+    #report-log-table td { padding: .25rem .3rem; font-family: monospace; border-bottom: 1px solid var(--border); }
+    #report-log-table td:first-child { font-family: system-ui, sans-serif; color: var(--muted); }
 
     @media print {
       body > *:not(#report-overlay) { display: none !important; }
       #report-overlay { display: block !important; position: static; background: none; padding: 0; }
-      #report-box { border: none; padding: 0; }
+      #report-box { border: none; padding: 0; background: #fff; color: #000; }
       .report-btn-row { display: none !important; }
+      :root { --ja: #16a34a; --nein: #dc2626; --enth: #d97706; --muted: #64748b; --border: #e2e8f0; }
     }
   </style>
 </head>
@@ -242,63 +251,56 @@
 
 <div id="status">Kamera wird gestartet…</div>
 
-<!-- Format toggle -->
 <div id="format-toggle">
   <button id="btn-qr" class="active">QR Code</button>
   <button id="btn-128">Code 128</button>
 </div>
 
-<!-- Action buttons -->
 <div class="btn-row">
   <button id="btn-report">Bericht anzeigen</button>
   <button id="btn-reset">Zurücksetzen</button>
 </div>
 
-<!-- Live tally -->
 <div id="tally-wrap">
-  <h2>Laufende Auswertung (Stimmen / Aktien)</h2>
+  <h2>Laufende Auswertung</h2>
   <table id="tally-table">
     <thead>
       <tr>
-        <th>Abstimmung</th>
-        <th class="col-ja">JA</th>
-        <th class="col-ja">JA Akt.</th>
-        <th class="col-nein">NEIN</th>
-        <th class="col-nein">NEIN Akt.</th>
-        <th class="col-enth">ENTH</th>
-        <th class="col-enth">ENTH Akt.</th>
+        <th>Abst</th>
+        <th class="col-ja">JA<br><small>Stimmen</small></th>
+        <th class="col-nein">NEIN<br><small>Stimmen</small></th>
+        <th class="col-enth">ENTH<br><small>Stimmen</small></th>
+        <th>Ergebnis</th>
       </tr>
     </thead>
     <tbody id="tally-body"></tbody>
-    <tfoot id="tally-foot"></tfoot>
   </table>
 </div>
 
-<!-- Scan log -->
 <div id="log-wrap">
   <h2>Scan-Protokoll</h2>
   <ul id="log"></ul>
 </div>
 
-<!-- Report modal -->
 <div id="report-overlay">
   <div id="report-box">
     <h2>Abstimmungsbericht</h2>
     <div id="report-content"></div>
     <div class="report-btn-row">
-      <button id="btn-print">Drucken / PDF</button>
+      <button id="btn-email">Email senden</button>
+      <button id="btn-pdf">PDF</button>
       <button id="btn-close">Schliessen</button>
     </div>
   </div>
 </div>
 
-<!-- ZXing barcode library -->
 <script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
-const scanned = new Set();
-const votes   = {};
-let   scanFormat = 'QR'; // 'QR' | 'CODE128'
+const scanned = new Set();  // dedup by raw barcode string
+const votes   = {};         // { voteNr: { J/N/E: { shares } } }
+const scanLog = [];         // unique scans in order: { ts, voteNr, type, shares, raw }
+let   scanFormat = 'QR';
 
 // ── Barcode parsing ────────────────────────────────────────────────────────
 const BARCODE_RE = /^(\d+)([JNE])(\d{3})\.(\d{3})$/;
@@ -306,31 +308,17 @@ const BARCODE_RE = /^(\d+)([JNE])(\d{3})\.(\d{3})$/;
 function parse(raw) {
   const m = raw.match(BARCODE_RE);
   if (!m) return null;
-  return {
-    raw,
-    voteNr: parseInt(m[1], 10),
-    type:   m[2],
-    shNr:   parseInt(m[3], 10),
-    shares: parseInt(m[4], 10),
-  };
+  return { raw, voteNr: parseInt(m[1], 10), type: m[2], shNr: parseInt(m[3], 10), shares: parseInt(m[4], 10) };
 }
 
 function record({ voteNr, type, shares }) {
-  if (!votes[voteNr]) {
-    votes[voteNr] = {
-      J: { count: 0, shares: 0 },
-      N: { count: 0, shares: 0 },
-      E: { count: 0, shares: 0 },
-    };
-  }
-  votes[voteNr][type].count++;
+  if (!votes[voteNr]) votes[voteNr] = { J: { shares: 0 }, N: { shares: 0 }, E: { shares: 0 } };
   votes[voteNr][type].shares += shares;
 }
 
 // ── UI helpers ─────────────────────────────────────────────────────────────
 const statusEl  = document.getElementById('status');
 const tallyBody = document.getElementById('tally-body');
-const tallyFoot = document.getElementById('tally-foot');
 const logEl     = document.getElementById('log');
 const flash     = document.getElementById('scan-flash');
 const aim       = document.getElementById('aim');
@@ -338,113 +326,135 @@ const aim       = document.getElementById('aim');
 const LABEL = { J: 'JA', N: 'NEIN', E: 'ENTH' };
 const BADGE = { J: 'badge-J', N: 'badge-N', E: 'badge-E' };
 
-function setStatus(msg, cls = '') {
-  statusEl.className = cls;
-  statusEl.textContent = msg;
-}
+function setStatus(msg, cls = '') { statusEl.className = cls; statusEl.textContent = msg; }
 
 function triggerFlash() {
   flash.classList.add('flash');
   setTimeout(() => flash.classList.remove('flash'), 150);
 }
 
-function addLog(parsed, isDup) {
+function getResult(r) {
+  if (r.J.shares === 0 && r.N.shares === 0) return { text: '–', cls: 'result-nil' };
+  return r.J.shares > r.N.shares
+    ? { text: 'Angenom.', cls: 'result-ok' }
+    : { text: 'Abgeleh.',  cls: 'result-no' };
+}
+
+function addLog(parsed) {
   const li = document.createElement('li');
   li.innerHTML = `
     <span class="code">${parsed.raw}</span>
-    <span>Abst.&nbsp;${parsed.voteNr} &bull; Akt.&nbsp;${parsed.shares}</span>
-    <span class="badge ${isDup ? 'badge-DUP' : BADGE[parsed.type]}">${isDup ? 'DUP' : LABEL[parsed.type]}</span>`;
+    <span>Abst.&nbsp;${parsed.voteNr} &bull; ${parsed.shares}&nbsp;Stim.</span>
+    <span class="badge ${BADGE[parsed.type]}">${LABEL[parsed.type]}</span>`;
   logEl.prepend(li);
 }
 
 function renderTally() {
   const rounds = Object.keys(votes).map(Number).sort((a, b) => a - b);
-  const totals = { J:{count:0,shares:0}, N:{count:0,shares:0}, E:{count:0,shares:0} };
-
   tallyBody.innerHTML = rounds.map(nr => {
     const r = votes[nr];
-    ['J','N','E'].forEach(t => { totals[t].count += r[t].count; totals[t].shares += r[t].shares; });
+    const res = getResult(r);
     return `<tr>
-      <td><strong>Abst.&nbsp;${nr}</strong></td>
-      <td class="col-ja${r.J.count?'':' zero'}">${r.J.count}</td>
-      <td class="col-ja${r.J.count?'':' zero'}">${r.J.shares}</td>
-      <td class="col-nein${r.N.count?'':' zero'}">${r.N.count}</td>
-      <td class="col-nein${r.N.count?'':' zero'}">${r.N.shares}</td>
-      <td class="col-enth${r.E.count?'':' zero'}">${r.E.count}</td>
-      <td class="col-enth${r.E.count?'':' zero'}">${r.E.shares}</td>
+      <td><strong>${nr}</strong></td>
+      <td class="col-ja${r.J.shares ? '' : ' zero'}">${r.J.shares}</td>
+      <td class="col-nein${r.N.shares ? '' : ' zero'}">${r.N.shares}</td>
+      <td class="col-enth${r.E.shares ? '' : ' zero'}">${r.E.shares}</td>
+      <td class="${res.cls}">${res.text}</td>
     </tr>`;
   }).join('');
-
-  if (!rounds.length) { tallyFoot.innerHTML = ''; return; }
-  tallyFoot.innerHTML = `<tr>
-    <td>Total</td>
-    <td class="col-ja">${totals.J.count}</td><td class="col-ja">${totals.J.shares}</td>
-    <td class="col-nein">${totals.N.count}</td><td class="col-nein">${totals.N.shares}</td>
-    <td class="col-enth">${totals.E.count}</td><td class="col-enth">${totals.E.shares}</td>
-  </tr>`;
 }
 
 // ── Report ─────────────────────────────────────────────────────────────────
 function buildReport() {
   const rounds = Object.keys(votes).map(Number).sort((a, b) => a - b);
-  const totals = { J:{count:0,shares:0}, N:{count:0,shares:0}, E:{count:0,shares:0} };
+  const now = new Date().toLocaleString('de-CH');
 
-  const rows = rounds.map(nr => {
+  const resultRows = rounds.map(nr => {
     const r = votes[nr];
-    ['J','N','E'].forEach(t => { totals[t].count += r[t].count; totals[t].shares += r[t].shares; });
-    const tot = r.J.count + r.N.count + r.E.count;
+    const res = getResult(r);
     const totS = r.J.shares + r.N.shares + r.E.shares;
     return `<tr>
-      <td><strong>Abstimmung&nbsp;${nr}</strong></td>
-      <td class="col-ja">${r.J.count}</td><td class="col-ja">${r.J.shares}</td>
-      <td class="col-nein">${r.N.count}</td><td class="col-nein">${r.N.shares}</td>
-      <td class="col-enth">${r.E.count}</td><td class="col-enth">${r.E.shares}</td>
-      <td>${tot}</td><td>${totS}</td>
+      <td><strong>${nr}</strong></td>
+      <td class="col-ja">${r.J.shares}</td>
+      <td class="col-nein">${r.N.shares}</td>
+      <td class="col-enth">${r.E.shares}</td>
+      <td>${totS}</td>
+      <td class="${res.cls}" style="font-weight:700">${res.text === 'Angenom.' ? 'Angenommen' : res.text === 'Abgeleh.' ? 'Abgelehnt' : '–'}</td>
     </tr>`;
   }).join('');
 
-  const now = new Date().toLocaleString('de-CH');
-  const totalAll = totals.J.count + totals.N.count + totals.E.count;
-  const sharesAll = totals.J.shares + totals.N.shares + totals.E.shares;
+  const logRows = scanLog.map(s =>
+    `<tr>
+      <td>${s.ts}</td>
+      <td class="${BADGE[s.type].replace('badge-', 'col-')}">${LABEL[s.type]}</td>
+      <td>${s.voteNr}</td>
+      <td>${s.shares}</td>
+      <td style="font-family:monospace;font-size:.72rem">${s.raw}</td>
+    </tr>`
+  ).join('');
 
   document.getElementById('report-content').innerHTML = `
-    <p style="color:var(--muted);font-size:.8rem;margin-bottom:.8rem">Erstellt: ${now} &bull; ${scanned.size} gescannte Zettel</p>
+    <p style="color:var(--muted);font-size:.78rem;margin-bottom:.8rem">
+      Erstellt: ${now} &bull; ${scanLog.length} Zettel erfasst
+    </p>
     <table>
       <thead>
         <tr>
-          <th>Abstimmung</th>
-          <th class="col-ja">JA</th><th class="col-ja">JA&nbsp;Akt.</th>
-          <th class="col-nein">NEIN</th><th class="col-nein">NEIN&nbsp;Akt.</th>
-          <th class="col-enth">ENTH</th><th class="col-enth">ENTH&nbsp;Akt.</th>
-          <th>Total</th><th>Akt.&nbsp;Total</th>
+          <th>Abst</th>
+          <th class="col-ja">JA<br><small>Stimmen</small></th>
+          <th class="col-nein">NEIN<br><small>Stimmen</small></th>
+          <th class="col-enth">ENTH<br><small>Stimmen</small></th>
+          <th>Total<br><small>Stimmen</small></th>
+          <th>Ergebnis</th>
         </tr>
       </thead>
-      <tbody>${rows}</tbody>
-      <tfoot>
+      <tbody>${resultRows}</tbody>
+    </table>
+    <h3>Scan-Protokoll</h3>
+    <table id="report-log-table">
+      <thead>
         <tr>
-          <td>Total</td>
-          <td class="col-ja">${totals.J.count}</td><td class="col-ja">${totals.J.shares}</td>
-          <td class="col-nein">${totals.N.count}</td><td class="col-nein">${totals.N.shares}</td>
-          <td class="col-enth">${totals.E.count}</td><td class="col-enth">${totals.E.shares}</td>
-          <td>${totalAll}</td><td>${sharesAll}</td>
+          <th style="text-align:left">Zeit</th>
+          <th style="text-align:left">Typ</th>
+          <th style="text-align:center">Abst</th>
+          <th style="text-align:center">Stimmen</th>
+          <th style="text-align:left">Code</th>
         </tr>
-      </tfoot>
+      </thead>
+      <tbody>${logRows || '<tr><td colspan="5" style="color:var(--muted)">Keine Scans</td></tr>'}</tbody>
     </table>`;
+}
+
+function buildReportText() {
+  const rounds = Object.keys(votes).map(Number).sort((a, b) => a - b);
+  const now = new Date().toLocaleString('de-CH');
+  let t = `Abstimmungsbericht\n${now}\n\n`;
+  t += 'Abst\tJA\tNEIN\tENTH\tErgebnis\n';
+  for (const nr of rounds) {
+    const r = votes[nr];
+    const res = r.J.shares > r.N.shares ? 'Angenommen' : r.J.shares === 0 && r.N.shares === 0 ? '-' : 'Abgelehnt';
+    t += `${nr}\t${r.J.shares}\t${r.N.shares}\t${r.E.shares}\t${res}\n`;
+  }
+  t += `\nScan-Protokoll (${scanLog.length} Zettel):\n`;
+  t += 'Zeit\tTyp\tAbst\tStimmen\tCode\n';
+  for (const s of scanLog) {
+    t += `${s.ts}\t${LABEL[s.type]}\t${s.voteNr}\t${s.shares}\t${s.raw}\n`;
+  }
+  return t;
 }
 
 // ── Camera / ZXing ─────────────────────────────────────────────────────────
 const video = document.getElementById('video');
 let codeReader   = null;
-let rearDeviceId = null;  // fixed to rear camera after init
+let rearDeviceId = null;
 
 function buildHints(format) {
   const hints = new Map();
   hints.set(
     ZXing.DecodeHintType.POSSIBLE_FORMATS,
-    format === 'QR'
-      ? [ZXing.BarcodeFormat.QR_CODE]
-      : [ZXing.BarcodeFormat.CODE_128]
+    format === 'QR' ? [ZXing.BarcodeFormat.QR_CODE] : [ZXing.BarcodeFormat.CODE_128]
   );
+  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
   return hints;
 }
 
@@ -454,23 +464,25 @@ function onResult(result) {
   const parsed = parse(raw);
   if (!parsed) { setStatus(`Unbekanntes Format: ${raw}`, 'error'); return; }
   if (scanned.has(raw)) {
-    setStatus(`Bereits gescannt: ${raw}`, 'dup');
-    addLog(parsed, true);
+    // silently ignore duplicate — already counted
     triggerFlash();
     return;
   }
   scanned.add(raw);
   record(parsed);
+  const ts = new Date().toLocaleTimeString('de-CH');
+  scanLog.push({ ts, voteNr: parsed.voteNr, type: parsed.type, shares: parsed.shares, raw });
   renderTally();
-  addLog(parsed, false);
+  addLog(parsed);
   triggerFlash();
-  setStatus(`✓ ${LABEL[parsed.type]} — Abst. ${parsed.voteNr} | Aktien: ${parsed.shares}`, 'ok');
+  setStatus(`✓ ${LABEL[parsed.type]} — Abst. ${parsed.voteNr} | ${parsed.shares} Stimmen`, 'ok');
   if (navigator.vibrate) navigator.vibrate(40);
 }
 
 async function startScanner(format) {
   if (codeReader) { try { codeReader.reset(); } catch (_) {} }
-  codeReader = new ZXing.BrowserMultiFormatReader(buildHints(format));
+  // 50 ms between attempts for faster recognition
+  codeReader = new ZXing.BrowserMultiFormatReader(buildHints(format), 50);
   setStatus('Kamera wird gestartet…');
   try {
     await codeReader.decodeFromVideoDevice(rearDeviceId, video, (result) => {
@@ -489,13 +501,11 @@ async function initCamera() {
   }
   setStatus('Bitte Kamerazugriff erlauben…');
   try {
-    // Trigger permission dialog, prefer rear camera
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: 'environment' } },
     });
     stream.getTracks().forEach(t => t.stop());
 
-    // Enumerate devices to find the rear camera by label
     const tempReader = new ZXing.BrowserMultiFormatReader();
     const devices    = await tempReader.listVideoInputDevices();
     const rear       = devices.find(d => /back|rear|environment/i.test(d.label));
@@ -525,18 +535,36 @@ function setFormat(format) {
 document.getElementById('btn-qr').addEventListener('click',  () => setFormat('QR'));
 document.getElementById('btn-128').addEventListener('click', () => setFormat('CODE128'));
 
-// ── Action buttons ─────────────────────────────────────────────────────────
+// ── Report buttons ─────────────────────────────────────────────────────────
 document.getElementById('btn-report').addEventListener('click', () => {
   buildReport();
   document.getElementById('report-overlay').classList.add('open');
 });
+
 document.getElementById('btn-close').addEventListener('click', () => {
   document.getElementById('report-overlay').classList.remove('open');
 });
-document.getElementById('btn-print').addEventListener('click', () => window.print());
+
+document.getElementById('btn-pdf').addEventListener('click', () => window.print());
+
+document.getElementById('btn-email').addEventListener('click', async () => {
+  const text = buildReportText();
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Abstimmungsbericht', text });
+      return;
+    } catch (_) { /* fall through */ }
+  }
+  const subject = encodeURIComponent('Abstimmungsbericht');
+  const body    = encodeURIComponent(text);
+  window.open(`mailto:?subject=${subject}&body=${body}`);
+});
+
+// ── Reset ──────────────────────────────────────────────────────────────────
 document.getElementById('btn-reset').addEventListener('click', () => {
   if (!confirm('Alle Scandaten löschen?')) return;
   scanned.clear();
+  scanLog.length = 0;
   for (const k in votes) delete votes[k];
   logEl.innerHTML = '';
   renderTally();
