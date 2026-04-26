@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Abstimmung Scanner</title>
-  <!-- version: 1.0.1 -->
+  <!-- version: 1.1.0 -->
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -43,20 +43,21 @@
       border: 2px solid var(--border);
       background: #000;
     }
-    #scanner-wrap video {
-      width: 100%;
-      display: block;
-    }
+    #scanner-wrap video { width: 100%; display: block; }
+
+    /* Aim overlay changes shape depending on mode */
     #aim {
       position: absolute;
       inset: 50% auto auto 50%;
       transform: translate(-50%, -50%);
-      width: 60%;
-      aspect-ratio: 3/1;
       border: 2px solid rgba(255,255,255,.6);
-      border-radius: 4px;
+      border-radius: 6px;
       pointer-events: none;
+      transition: width .25s, aspect-ratio .25s;
     }
+    #aim.mode-qr      { width: 52%; aspect-ratio: 1/1; }
+    #aim.mode-code128 { width: 80%; aspect-ratio: 4/1; }
+
     #scan-flash {
       position: absolute;
       inset: 0;
@@ -81,7 +82,33 @@
     #status.dup   { color: var(--enth); border-color: var(--enth); }
     #status.error { color: var(--nein); border-color: var(--nein); }
 
-    /* ── Buttons ── */
+    /* ── Format toggle ── */
+    #format-toggle {
+      display: flex;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 3px;
+    }
+    #format-toggle button {
+      flex: 1;
+      padding: .45rem 1.1rem;
+      border-radius: 7px;
+      border: none;
+      font-size: .9rem;
+      font-weight: 600;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    #format-toggle button.active {
+      background: #3b82f6;
+      color: #fff;
+    }
+
+    /* ── Action buttons ── */
     .btn-row {
       display: flex;
       gap: .6rem;
@@ -98,14 +125,10 @@
     }
     #btn-report { background: #3b82f6; color: #fff; }
     #btn-reset  { background: var(--card); color: var(--muted); border: 1px solid var(--border); }
-    #btn-camera { background: var(--card); color: var(--muted); border: 1px solid var(--border); }
     button:active { opacity: .8; }
 
     /* ── Live tally ── */
-    #tally-wrap {
-      width: 100%;
-      max-width: 600px;
-    }
+    #tally-wrap { width: 100%; max-width: 600px; }
     #tally-wrap h2 { font-size: 1rem; color: var(--muted); margin-bottom: .5rem; }
     #tally-table {
       width: 100%;
@@ -194,9 +217,9 @@
       font-size: .75rem;
       font-weight: 700;
     }
-    .badge-J  { background: #14532d; color: var(--ja); }
-    .badge-N  { background: #450a0a; color: var(--nein); }
-    .badge-E  { background: #451a03; color: var(--enth); }
+    .badge-J   { background: #14532d; color: var(--ja); }
+    .badge-N   { background: #450a0a; color: var(--nein); }
+    .badge-E   { background: #451a03; color: var(--enth); }
     .badge-DUP { background: #1e293b; color: var(--muted); }
 
     @media print {
@@ -213,14 +236,20 @@
 
 <div id="scanner-wrap">
   <video id="video" playsinline muted></video>
-  <div id="aim"></div>
+  <div id="aim" class="mode-qr"></div>
   <div id="scan-flash"></div>
 </div>
 
 <div id="status">Kamera wird gestartet…</div>
 
+<!-- Format toggle -->
+<div id="format-toggle">
+  <button id="btn-qr" class="active">QR Code</button>
+  <button id="btn-128">Code 128</button>
+</div>
+
+<!-- Action buttons -->
 <div class="btn-row">
-  <button id="btn-camera">Kamera wechseln</button>
   <button id="btn-report">Bericht anzeigen</button>
   <button id="btn-reset">Zurücksetzen</button>
 </div>
@@ -267,13 +296,11 @@
 <script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
-const scanned = new Set();   // deduplicate raw codes
-// votes[voteNr] = { J:{count,shares}, N:{count,shares}, E:{count,shares} }
-const votes = {};
+const scanned = new Set();
+const votes   = {};
+let   scanFormat = 'QR'; // 'QR' | 'CODE128'
 
 // ── Barcode parsing ────────────────────────────────────────────────────────
-// Format: [VoteNr][Type][ShareholderNr].[ShareCount]
-// Example: 2N012.045
 const BARCODE_RE = /^(\d+)([JNE])(\d{3})\.(\d{3})$/;
 
 function parse(raw) {
@@ -281,15 +308,14 @@ function parse(raw) {
   if (!m) return null;
   return {
     raw,
-    voteNr:    parseInt(m[1], 10),
-    type:      m[2],            // J | N | E
-    shNr:      parseInt(m[3], 10),
-    shares:    parseInt(m[4], 10),
+    voteNr: parseInt(m[1], 10),
+    type:   m[2],
+    shNr:   parseInt(m[3], 10),
+    shares: parseInt(m[4], 10),
   };
 }
 
-function record(parsed) {
-  const { voteNr, type, shares } = parsed;
+function record({ voteNr, type, shares }) {
   if (!votes[voteNr]) {
     votes[voteNr] = {
       J: { count: 0, shares: 0 },
@@ -307,6 +333,7 @@ const tallyBody = document.getElementById('tally-body');
 const tallyFoot = document.getElementById('tally-foot');
 const logEl     = document.getElementById('log');
 const flash     = document.getElementById('scan-flash');
+const aim       = document.getElementById('aim');
 
 const LABEL = { J: 'JA', N: 'NEIN', E: 'ENTH' };
 const BADGE = { J: 'badge-J', N: 'badge-N', E: 'badge-E' };
@@ -323,67 +350,56 @@ function triggerFlash() {
 
 function addLog(parsed, isDup) {
   const li = document.createElement('li');
-  const badgeClass = isDup ? 'badge-DUP' : BADGE[parsed.type];
-  const label = isDup ? 'DUP' : LABEL[parsed.type];
   li.innerHTML = `
     <span class="code">${parsed.raw}</span>
     <span>Abst.&nbsp;${parsed.voteNr} &bull; Akt.&nbsp;${parsed.shares}</span>
-    <span class="badge ${badgeClass}">${label}</span>`;
+    <span class="badge ${isDup ? 'badge-DUP' : BADGE[parsed.type]}">${isDup ? 'DUP' : LABEL[parsed.type]}</span>`;
   logEl.prepend(li);
 }
 
 function renderTally() {
-  const rounds = Object.keys(votes).map(Number).sort((a,b) => a-b);
+  const rounds = Object.keys(votes).map(Number).sort((a, b) => a - b);
   const totals = { J:{count:0,shares:0}, N:{count:0,shares:0}, E:{count:0,shares:0} };
 
   tallyBody.innerHTML = rounds.map(nr => {
     const r = votes[nr];
-    ['J','N','E'].forEach(t => {
-      totals[t].count  += r[t].count;
-      totals[t].shares += r[t].shares;
-    });
+    ['J','N','E'].forEach(t => { totals[t].count += r[t].count; totals[t].shares += r[t].shares; });
     return `<tr>
       <td><strong>Abst.&nbsp;${nr}</strong></td>
-      <td class="col-ja ${r.J.count?'':' zero'}">${r.J.count}</td>
-      <td class="col-ja ${r.J.count?'':' zero'}">${r.J.shares}</td>
-      <td class="col-nein ${r.N.count?'':' zero'}">${r.N.count}</td>
-      <td class="col-nein ${r.N.count?'':' zero'}">${r.N.shares}</td>
-      <td class="col-enth ${r.E.count?'':' zero'}">${r.E.count}</td>
-      <td class="col-enth ${r.E.count?'':' zero'}">${r.E.shares}</td>
+      <td class="col-ja${r.J.count?'':' zero'}">${r.J.count}</td>
+      <td class="col-ja${r.J.count?'':' zero'}">${r.J.shares}</td>
+      <td class="col-nein${r.N.count?'':' zero'}">${r.N.count}</td>
+      <td class="col-nein${r.N.count?'':' zero'}">${r.N.shares}</td>
+      <td class="col-enth${r.E.count?'':' zero'}">${r.E.count}</td>
+      <td class="col-enth${r.E.count?'':' zero'}">${r.E.shares}</td>
     </tr>`;
   }).join('');
 
-  if (rounds.length === 0) { tallyFoot.innerHTML = ''; return; }
+  if (!rounds.length) { tallyFoot.innerHTML = ''; return; }
   tallyFoot.innerHTML = `<tr>
     <td>Total</td>
-    <td class="col-ja">${totals.J.count}</td>
-    <td class="col-ja">${totals.J.shares}</td>
-    <td class="col-nein">${totals.N.count}</td>
-    <td class="col-nein">${totals.N.shares}</td>
-    <td class="col-enth">${totals.E.count}</td>
-    <td class="col-enth">${totals.E.shares}</td>
+    <td class="col-ja">${totals.J.count}</td><td class="col-ja">${totals.J.shares}</td>
+    <td class="col-nein">${totals.N.count}</td><td class="col-nein">${totals.N.shares}</td>
+    <td class="col-enth">${totals.E.count}</td><td class="col-enth">${totals.E.shares}</td>
   </tr>`;
 }
 
 // ── Report ─────────────────────────────────────────────────────────────────
 function buildReport() {
-  const rounds = Object.keys(votes).map(Number).sort((a,b) => a-b);
+  const rounds = Object.keys(votes).map(Number).sort((a, b) => a - b);
   const totals = { J:{count:0,shares:0}, N:{count:0,shares:0}, E:{count:0,shares:0} };
 
   const rows = rounds.map(nr => {
     const r = votes[nr];
-    ['J','N','E'].forEach(t => {
-      totals[t].count  += r[t].count;
-      totals[t].shares += r[t].shares;
-    });
-    const total = r.J.count + r.N.count + r.E.count;
-    const totalShares = r.J.shares + r.N.shares + r.E.shares;
+    ['J','N','E'].forEach(t => { totals[t].count += r[t].count; totals[t].shares += r[t].shares; });
+    const tot = r.J.count + r.N.count + r.E.count;
+    const totS = r.J.shares + r.N.shares + r.E.shares;
     return `<tr>
       <td><strong>Abstimmung&nbsp;${nr}</strong></td>
       <td class="col-ja">${r.J.count}</td><td class="col-ja">${r.J.shares}</td>
       <td class="col-nein">${r.N.count}</td><td class="col-nein">${r.N.shares}</td>
       <td class="col-enth">${r.E.count}</td><td class="col-enth">${r.E.shares}</td>
-      <td>${total}</td><td>${totalShares}</td>
+      <td>${tot}</td><td>${totS}</td>
     </tr>`;
   }).join('');
 
@@ -418,18 +434,25 @@ function buildReport() {
 
 // ── Camera / ZXing ─────────────────────────────────────────────────────────
 const video = document.getElementById('video');
-let codeReader = null;
-let deviceList  = [];
-let deviceIndex = 0;
+let codeReader   = null;
+let rearDeviceId = null;  // fixed to rear camera after init
+
+function buildHints(format) {
+  const hints = new Map();
+  hints.set(
+    ZXing.DecodeHintType.POSSIBLE_FORMATS,
+    format === 'QR'
+      ? [ZXing.BarcodeFormat.QR_CODE]
+      : [ZXing.BarcodeFormat.CODE_128]
+  );
+  return hints;
+}
 
 function onResult(result) {
   if (!result) return;
-  const raw = result.getText();
+  const raw    = result.getText();
   const parsed = parse(raw);
-  if (!parsed) {
-    setStatus(`Unbekanntes Format: ${raw}`, 'error');
-    return;
-  }
+  if (!parsed) { setStatus(`Unbekanntes Format: ${raw}`, 'error'); return; }
   if (scanned.has(raw)) {
     setStatus(`Bereits gescannt: ${raw}`, 'dup');
     addLog(parsed, true);
@@ -445,12 +468,12 @@ function onResult(result) {
   if (navigator.vibrate) navigator.vibrate(40);
 }
 
-async function startScanner(deviceId) {
-  if (codeReader) { try { codeReader.reset(); } catch(_) {} }
-  codeReader = new ZXing.BrowserMultiFormatReader();
+async function startScanner(format) {
+  if (codeReader) { try { codeReader.reset(); } catch (_) {} }
+  codeReader = new ZXing.BrowserMultiFormatReader(buildHints(format));
   setStatus('Kamera wird gestartet…');
   try {
-    await codeReader.decodeFromVideoDevice(deviceId || undefined, video, (result, err) => {
+    await codeReader.decodeFromVideoDevice(rearDeviceId, video, (result) => {
       if (result) onResult(result);
     });
     setStatus('Bereit zum Scannen…');
@@ -460,20 +483,25 @@ async function startScanner(deviceId) {
 }
 
 async function initCamera() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    setStatus('Kamera wird von diesem Browser nicht unterstützt (HTTPS erforderlich)', 'error');
+  if (!navigator.mediaDevices?.getUserMedia) {
+    setStatus('Kamera nicht unterstützt (HTTPS erforderlich)', 'error');
     return;
   }
   setStatus('Bitte Kamerazugriff erlauben…');
   try {
-    // Must request permission first — only then does listVideoInputDevices return labels
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    stream.getTracks().forEach(t => t.stop()); // stop preview stream, ZXing will open its own
+    // Trigger permission dialog, prefer rear camera
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' } },
+    });
+    stream.getTracks().forEach(t => t.stop());
+
+    // Enumerate devices to find the rear camera by label
     const tempReader = new ZXing.BrowserMultiFormatReader();
-    deviceList = await tempReader.listVideoInputDevices();
-    const rear = deviceList.find(d => /back|rear|environment/i.test(d.label));
-    deviceIndex = rear ? deviceList.indexOf(rear) : 0;
-    await startScanner(deviceList[deviceIndex]?.deviceId);
+    const devices    = await tempReader.listVideoInputDevices();
+    const rear       = devices.find(d => /back|rear|environment/i.test(d.label));
+    rearDeviceId     = rear ? rear.deviceId : (devices[0]?.deviceId ?? null);
+
+    await startScanner(scanFormat);
   } catch (e) {
     if (e.name === 'NotAllowedError') {
       setStatus('Kamerazugriff verweigert — bitte in den Browser-Einstellungen erlauben', 'error');
@@ -485,24 +513,27 @@ async function initCamera() {
   }
 }
 
-// ── Button handlers ────────────────────────────────────────────────────────
-document.getElementById('btn-camera').addEventListener('click', async () => {
-  if (!deviceList.length) { await initCamera(); return; }
-  deviceIndex = (deviceIndex + 1) % deviceList.length;
-  await startScanner(deviceList[deviceIndex]?.deviceId);
-});
+// ── Format toggle ──────────────────────────────────────────────────────────
+function setFormat(format) {
+  scanFormat = format;
+  document.getElementById('btn-qr').classList.toggle('active', format === 'QR');
+  document.getElementById('btn-128').classList.toggle('active', format === 'CODE128');
+  aim.className = format === 'QR' ? 'mode-qr' : 'mode-code128';
+  if (rearDeviceId !== null) startScanner(format);
+}
 
+document.getElementById('btn-qr').addEventListener('click',  () => setFormat('QR'));
+document.getElementById('btn-128').addEventListener('click', () => setFormat('CODE128'));
+
+// ── Action buttons ─────────────────────────────────────────────────────────
 document.getElementById('btn-report').addEventListener('click', () => {
   buildReport();
   document.getElementById('report-overlay').classList.add('open');
 });
-
 document.getElementById('btn-close').addEventListener('click', () => {
   document.getElementById('report-overlay').classList.remove('open');
 });
-
 document.getElementById('btn-print').addEventListener('click', () => window.print());
-
 document.getElementById('btn-reset').addEventListener('click', () => {
   if (!confirm('Alle Scandaten löschen?')) return;
   scanned.clear();
